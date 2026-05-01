@@ -30,6 +30,18 @@ var STATUS_IN_WORK = "В роботі";
 var STATUS_ISSUED = "Видано";
 
 ///////////////////////////////////////////
+// МЕНЮ
+///////////////////////////////////////////
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu("Електроцех")
+    .addItem("Надіслати вибрані замовлення", "sendSelectedPackages")
+    .addItem("Оновити документ для підпису", "rebuildMemoNow")
+    .addToUi();
+}
+
+///////////////////////////////////////////
 // ГОЛОВНИЙ ТРИГЕР
 ///////////////////////////////////////////
 
@@ -43,11 +55,6 @@ function onEdit(e) {
   if (sheet.getName() !== ORDERS_SHEET_NAME) return;
   if (row === 1) return;
 
-  if (col === COL_SEND && e.value === "TRUE") {
-    processSelectedPackage_();
-    return;
-  }
-
   if (col === COL_STATUS) {
     handleStatusEdit_(sheet, row, e.oldValue, e.value);
     rebuildMemoSheet_();
@@ -58,9 +65,12 @@ function onEdit(e) {
 // ПАКЕТНА ВІДПРАВКА
 ///////////////////////////////////////////
 
-function processSelectedPackage_() {
+function sendSelectedPackages() {
   var lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) return;
+  if (!lock.tryLock(10000)) {
+    SpreadsheetApp.getUi().alert("Спробуйте ще раз через кілька секунд.");
+    return;
+  }
 
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -68,10 +78,14 @@ function processSelectedPackage_() {
     if (!sheet) throw new Error('Не знайдено лист "' + ORDERS_SHEET_NAME + '"');
 
     var selectedRows = getSelectedRows_(sheet);
-    if (selectedRows.length === 0) return;
+    if (selectedRows.length === 0) {
+      SpreadsheetApp.getUi().alert("Немає вибраних рядків для відправки.");
+      return;
+    }
 
-    var grouped = groupRowsByDate_(selectedRows);
-    var dateKeys = Object.keys(grouped);
+    var grouped = groupRowsByDate_(sheet, selectedRows);
+    var dateKeys = Object.keys(grouped).sort();
+    var packageCount = 0;
 
     for (var i = 0; i < dateKeys.length; i++) {
       var dateKey = dateKeys[i];
@@ -79,16 +93,17 @@ function processSelectedPackage_() {
 
       prepareRowsForSend_(sheet, rows);
 
-      var packageId = generatePackageId_(dateKey);
+      var packageId = generatePackageId_(dateKey, i + 1);
       var message = buildManagerPackageMessage_(sheet, rows, packageId, dateKey);
 
-      var telegramOk = sendTelegramToManager_(message);
-      if (telegramOk) {
+      if (sendTelegramToManager_(message)) {
         markPackageSent_(sheet, rows, packageId);
+        packageCount++;
       }
     }
 
     rebuildMemoSheet_();
+    SpreadsheetApp.getUi().alert("Відправлено пакетів: " + packageCount);
   } finally {
     lock.releaseLock();
   }
@@ -116,9 +131,7 @@ function getSelectedRows_(sheet) {
   return rows;
 }
 
-function groupRowsByDate_(rowNumbers) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(ORDERS_SHEET_NAME);
+function groupRowsByDate_(sheet, rowNumbers) {
   var grouped = {};
 
   for (var i = 0; i < rowNumbers.length; i++) {
@@ -385,8 +398,8 @@ function generateOrderId_() {
   return "ORD-" + Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyyMMdd-HHmmss");
 }
 
-function generatePackageId_(dateKey) {
-  return "PKG-" + dateKey.replace(/\./g, "") + "-" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HHmmss");
+function generatePackageId_(dateKey, index) {
+  return "PKG-" + dateKey.replace(/\./g, "") + "-" + ("0" + index).slice(-2);
 }
 
 function valueOrNA_(value) {
