@@ -1,22 +1,15 @@
-# Electrocech Apps Script
+# Order Table With Sending And Synchronization Via Telegram
 
-Google Apps Script project for the `Електроцех` spreadsheet.
+Google Apps Script для таблиці електроцеху, яка:
 
-## Sheets
+- збирає замовлення на листі `Замовлення`
+- надсилає пакет замовлень менеджеру в Telegram
+- повідомляє інженера про зміну статусу
+- автоматично формує лист `Документ для підпису`
 
-- `Замовлення`
-- `Документ для підпису`
+## Структура таблиці
 
-## Features
-
-- Package orders by date when column `J` is checked.
-- Send one Telegram message per package to the manager.
-- Clear `J` after successful send.
-- Write package ID into column `L`.
-- Send status updates from column `K` to the engineer.
-- Rebuild the `Документ для підпису` sheet automatically.
-
-## Required columns in `Замовлення`
+### Лист `Замовлення`
 
 - `A`: ID
 - `B`: Дата
@@ -31,19 +24,64 @@ Google Apps Script project for the `Електроцех` spreadsheet.
 - `K`: Стан замовлення
 - `L`: Пакет
 
-## Setup
+### Лист `Документ для підпису`
 
-1. Open the spreadsheet-bound Apps Script project.
-2. Copy `Code.gs` into the project.
-3. Set script properties:
+Лист формується автоматично скриптом. У ньому створюється службова записка з таблицею:
+
+- `ID`
+- `Дата`
+- `Назва`
+- `Фірма виробник`
+- `Кількість`
+
+## Логіка роботи
+
+1. Інженер заповнює один або кілька рядків на листі `Замовлення`.
+2. У колонці `J` ставиться галочка для рядків, які треба відправити.
+3. Скрипт групує вибрані рядки за датою.
+4. Для кожної дати формується один пакет.
+5. Менеджеру надсилається одне повідомлення в Telegram по пакету.
+6. Якщо Telegram підтвердив успішну відправку:
+   - у колонку `L` записується ID пакета
+   - галочка в `J` автоматично знімається
+7. При зміні статусу в колонці `K` інженеру надсилається повідомлення в Telegram.
+8. Лист `Документ для підпису` перебудовується автоматично.
+
+## Статуси
+
+У колонці `K` використовується випадаючий список:
+
+- `Отримано`
+- `В роботі`
+- `Видано`
+
+## Налаштування Apps Script
+
+1. Відкрийте таблицю Google Sheets.
+2. Перейдіть у `Розширення` → `Apps Script`.
+3. Вставте код із файлу `Code.gs`.
+4. Додайте `Script Properties`:
    - `TELEGRAM_BOT_TOKEN`
    - `TELEGRAM_MANAGER_CHAT_ID`
    - `TELEGRAM_ENGINEER_CHAT_ID`
-4. Create an installable trigger:
-   - function: `onEdit`
-   - source: `From spreadsheet`
-   - event type: `On edit`
+5. Створіть встановлюваний тригер:
+   - функція: `onEdit`
+   - джерело події: `From spreadsheet`
+   - тип події: `On edit`
 
-## GitHub
+## Важливі примітки
 
-Do not commit real Telegram tokens or chat IDs.
+- У колонці `J` має бути саме чекбокс.
+- У колонці `K` має бути саме випадаючий список статусів.
+- У колонці `L` не потрібна формула: її заповнює сам скрипт.
+- Реальні Telegram токени та `chat_id` не слід зберігати в репозиторії.
+
+## Файли репозиторію
+
+- `Code.gs` — основна логіка проєкту
+- `appsscript.json` — конфігурація Apps Script
+- `.gitignore` — виключення для локальних службових файлів
+
+## Безпека
+
+Якщо Telegram токен коли-небудь був опублікований або надісланий комусь сторонньому, його потрібно перевипустити через `@BotFather`.
