@@ -94,9 +94,11 @@ function sendSelectedPackages() {
       prepareRowsForSend_(sheet, rows);
 
       var packageId = generatePackageId_(dateKey, i + 1);
-      var message = buildManagerPackageMessage_(sheet, rows, packageId, dateKey);
+      var managerMessage = buildManagerPackageMessage_(sheet, rows, packageId, dateKey);
+      var engineerMessage = buildEngineerPackageMessage_(sheet, rows, packageId, dateKey);
 
-      if (sendTelegramToManager_(message)) {
+      if (sendTelegramToManager_(managerMessage)) {
+        sendTelegramToEngineer_(engineerMessage);
         markPackageSent_(sheet, rows, packageId);
         packageCount++;
       }
@@ -202,6 +204,31 @@ function buildManagerPackageMessage_(sheet, rows, packageId, dateKey) {
     lines.push("Каталожний номер: " + valueOrNA_(catalog));
     lines.push("Кількість: " + valueOrNA_(qty));
     lines.push("Терміновість: " + valueOrNA_(urgent));
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
+function buildEngineerPackageMessage_(sheet, rows, packageId, dateKey) {
+  var lines = [];
+  lines.push("📤 Замовлення успішно відправлено");
+  lines.push("Пакет: " + packageId);
+  lines.push("Дата: " + dateKey);
+  lines.push("Кількість позицій: " + rows.length);
+  lines.push("");
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var id = sheet.getRange(row, COL_ID).getValue();
+    var name = sheet.getRange(row, COL_NAME).getValue();
+    var brand = sheet.getRange(row, COL_BRAND).getValue();
+    var qty = sheet.getRange(row, COL_QTY).getValue();
+
+    lines.push((i + 1) + ". ID: " + valueOrNA_(id));
+    lines.push("Назва: " + valueOrNA_(name));
+    lines.push("Фірма: " + valueOrNA_(brand));
+    lines.push("Кількість: " + valueOrNA_(qty));
     lines.push("");
   }
 
