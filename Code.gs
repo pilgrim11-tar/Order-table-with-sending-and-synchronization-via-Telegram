@@ -87,6 +87,8 @@ function sendSelectedPackages() {
     var dateKeys = Object.keys(grouped).sort();
     var packageCount = 0;
 
+    var sentPackageIds = [];
+
     for (var i = 0; i < dateKeys.length; i++) {
       var dateKey = dateKeys[i];
       var rows = grouped[dateKey];
@@ -100,11 +102,17 @@ function sendSelectedPackages() {
       if (sendTelegramToManager_(managerMessage)) {
         sendTelegramToEngineer_(engineerMessage);
         markPackageSent_(sheet, rows, packageId);
+        sentPackageIds.push(packageId);
         packageCount++;
       }
     }
 
     rebuildMemoSheet_();
+
+    if (sentPackageIds.length > 0) {
+      sendMemoPdfToManager_(sentPackageIds);
+    }
+
     SpreadsheetApp.getUi().alert("Відправлено пакетів: " + packageCount);
   } finally {
     lock.releaseLock();
@@ -414,6 +422,81 @@ function sendTelegram_(chatIdPropKey, message) {
   }
 
   return true;
+}
+
+function sendMemoPdfToManager_(packageIds) {
+  var props = PropertiesService.getScriptProperties();
+  var botToken = props.getProperty(PROP_BOT_TOKEN);
+  var chatId = props.getProperty(PROP_MANAGER_CHAT_ID);
+
+  if (!botToken) throw new Error("Не задано TELEGRAM_BOT_TOKEN у Script Properties");
+  if (!chatId) throw new Error("Не задано " + PROP_MANAGER_CHAT_ID + " у Script Properties");
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var memoSheet = ss.getSheetByName(MEMO_SHEET_NAME);
+  if (!memoSheet) throw new Error('Не знайдено лист "' + MEMO_SHEET_NAME + '"');
+
+  var blob = exportSheetToPdf_(ss, memoSheet, buildMemoPdfFileName_(packageIds));
+  var url = "https://api.telegram.org/bot" + botToken + "/sendDocument";
+  var caption = "📎 Документ для підпису\nПакети: " + packageIds.join(", ");
+
+  var options = {
+    method: "post",
+    payload: {
+      chat_id: String(chatId),
+      caption: caption,
+      document: blob
+    },
+    muteHttpExceptions: true
+  };
+
+  var response = UrlFetchApp.fetch(url, options);
+  var result = JSON.parse(response.getContentText());
+  Logger.log(response.getContentText());
+
+  if (!result.ok) {
+    throw new Error("Telegram PDF error: " + result.description);
+  }
+
+  return true;
+}
+
+function exportSheetToPdf_(spreadsheet, sheet, fileName) {
+  var exportUrl =
+    "https://docs.google.com/spreadsheets/d/" + spreadsheet.getId() + "/export" +
+    "?format=pdf" +
+    "&gid=" + sheet.getSheetId() +
+    "&size=A4" +
+    "&portrait=true" +
+    "&fitw=true" +
+    "&sheetnames=false" +
+    "&printtitle=false" +
+    "&pagenumbers=false" +
+    "&gridlines=false" +
+    "&fzr=false" +
+    "&top_margin=0.50" +
+    "&bottom_margin=0.50" +
+    "&left_margin=0.50" +
+    "&right_margin=0.50";
+
+  var token = ScriptApp.getOAuthToken();
+  var response = UrlFetchApp.fetch(exportUrl, {
+    headers: {
+      Authorization: "Bearer " + token
+    },
+    muteHttpExceptions: true
+  });
+
+  if (response.getResponseCode() !== 200) {
+    throw new Error("Не вдалося сформувати PDF. Код: " + response.getResponseCode());
+  }
+
+  return response.getBlob().setName(fileName);
+}
+
+function buildMemoPdfFileName_(packageIds) {
+  var suffix = packageIds.length === 1 ? packageIds[0] : packageIds[0] + "_and_more";
+  return "document_dlya_pidpysu_" + suffix + ".pdf";
 }
 
 ///////////////////////////////////////////
