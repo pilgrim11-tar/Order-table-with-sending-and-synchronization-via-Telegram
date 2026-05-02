@@ -231,11 +231,13 @@ function buildEngineerPackageMessage_(sheet, rows, packageId, dateKey) {
     var id = sheet.getRange(row, COL_ID).getValue();
     var name = sheet.getRange(row, COL_NAME).getValue();
     var brand = sheet.getRange(row, COL_BRAND).getValue();
+    var catalog = sheet.getRange(row, COL_CATALOG).getValue();
     var qty = sheet.getRange(row, COL_QTY).getValue();
 
     lines.push((i + 1) + ". ID: " + valueOrNA_(id));
     lines.push("Назва: " + valueOrNA_(name));
     lines.push("Фірма: " + valueOrNA_(brand));
+    lines.push("Каталожний номер: " + valueOrNA_(catalog));
     lines.push("Кількість: " + valueOrNA_(qty));
     lines.push("");
   }
