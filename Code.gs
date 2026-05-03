@@ -348,6 +348,9 @@ function rebuildMemoSheet_() {
 
   var lastTableRow = Math.max(tableStartRow + 1, tableStartRow + data.length);
   memoSheet.getRange(tableStartRow, 1, lastTableRow - tableStartRow + 1, 5)
+    .setHorizontalAlignment("center")
+    .setVerticalAlignment("middle")
+    .setWrap(true)
     .setBorder(true, true, true, true, true, true);
 
   var signRow = lastTableRow + 3;
@@ -361,7 +364,10 @@ function rebuildMemoSheet_() {
     "Погоджено ___                              Олінчук С.В. ____________________"
   );
 
-  memoSheet.getDataRange().setVerticalAlignment("middle");
+  memoSheet.getDataRange()
+    .setHorizontalAlignment("center")
+    .setVerticalAlignment("middle")
+    .setWrap(true);
 }
 
 function getMemoRows_(ordersSheet) {
