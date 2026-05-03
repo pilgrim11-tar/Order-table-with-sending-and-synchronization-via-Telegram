@@ -656,3 +656,19 @@ function rebuildMemoNow() {
   rebuildMemoSheet_();
   SpreadsheetApp.flush();
 }
+
+function cleanupOldMemoPdfs() {
+  var cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 1);
+
+  var files = DriveApp.searchFiles('mimeType = "application/pdf" and trashed = false');
+
+  while (files.hasNext()) {
+    var file = files.next();
+    var name = file.getName();
+
+    if (name.indexOf("document_dlya_pidpysu_") === 0 && file.getDateCreated() < cutoff) {
+      file.setTrashed(true);
+    }
+  }
+}
