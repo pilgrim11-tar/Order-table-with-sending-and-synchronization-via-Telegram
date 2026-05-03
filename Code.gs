@@ -52,8 +52,19 @@ function onEdit(e) {
   if (sheet.getName() !== ORDERS_SHEET_NAME) return;
   if (row === 1) return;
 
+  var shouldRebuildMemo =
+    col === COL_STATUS ||
+    col === COL_DATE ||
+    col === COL_NAME ||
+    col === COL_BRAND ||
+    col === COL_QTY ||
+    col === COL_PACKAGE;
+
   if (col === COL_STATUS) {
     handleStatusEdit_(sheet, row, e.oldValue, e.value);
+  }
+
+  if (shouldRebuildMemo && shouldRowAffectMemo_(sheet, row)) {
     rebuildMemoSheet_();
   }
 }
@@ -84,6 +95,7 @@ function sendSelectedPackages() {
     var dateKeys = Object.keys(grouped).sort();
     var packageCount = 0;
     var sentPackageIds = [];
+    var engineerErrors = [];
 
     for (var i = 0; i < dateKeys.length; i++) {
       var dateKey = dateKeys[i];
@@ -96,10 +108,16 @@ function sendSelectedPackages() {
       var engineerMessage = buildEngineerPackageMessage_(sheet, rows, packageId, dateKey);
 
       if (sendTelegramToManager_(managerMessage)) {
-        sendTelegramToEngineer_(engineerMessage);
         markPackageSent_(sheet, rows, packageId);
         sentPackageIds.push(packageId);
         packageCount++;
+
+        try {
+          sendTelegramToEngineer_(engineerMessage);
+        } catch (err) {
+          Logger.log("Engineer notification failed for " + packageId + ": " + err.message);
+          engineerErrors.push(packageId);
+        }
       }
     }
 
@@ -111,7 +129,12 @@ function sendSelectedPackages() {
       sendMemoPdfToRecipients_(sentPackageIds);
     }
 
-    notifyUser_("Відправлено пакетів: " + packageCount);
+    var resultMessage = "Відправлено пакетів: " + packageCount;
+    if (engineerErrors.length > 0) {
+      resultMessage += "\nНе надіслано повідомлення інженеру для пакетів: " + engineerErrors.join(", ");
+    }
+
+    notifyUser_(resultMessage);
   } finally {
     lock.releaseLock();
   }
@@ -394,6 +417,12 @@ function getMemoRows_(ordersSheet) {
   }
 
   return result;
+}
+
+function shouldRowAffectMemo_(sheet, row) {
+  var packageId = String(sheet.getRange(row, COL_PACKAGE).getValue() || "").trim();
+  var status = String(sheet.getRange(row, COL_STATUS).getValue() || "").trim();
+  return !!packageId && status !== STATUS_ISSUED;
 }
 
 ///////////////////////////////////////////
