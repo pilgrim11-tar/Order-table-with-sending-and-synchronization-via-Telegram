@@ -621,28 +621,3 @@ function rebuildMemoNow() {
   rebuildMemoSheet_();
   SpreadsheetApp.flush();
 }
-
-function testManagerTelegram() {
-  sendTelegramToManager_("Тестове повідомлення менеджеру");
-}
-
-function testEngineerTelegram() {
-  sendTelegramToEngineer_("Тестове повідомлення інженеру");
-}
-
-function testMemoPdfOnly() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var memoSheet = ss.getSheetByName(MEMO_SHEET_NAME);
-  if (!memoSheet) throw new Error('Не знайдено лист "' + MEMO_SHEET_NAME + '"');
-
-  SpreadsheetApp.flush();
-  Utilities.sleep(2000);
-
-  var blob = exportSheetToPdf_(ss, memoSheet, "test_memo.pdf");
-  Logger.log("PDF name: " + blob.getName());
-  Logger.log("PDF size: " + blob.getBytes().length);
-}
-
-function testSendMemoPdfToManager() {
-  sendMemoPdfToRecipients_(["TEST-PACKAGE"]);
-}
