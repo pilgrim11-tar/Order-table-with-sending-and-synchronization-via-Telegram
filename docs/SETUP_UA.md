@@ -24,10 +24,6 @@
 - `K`: Стан замовлення
 - `L`: Пакет
 
-Скріншот:
-
-![Лист Замовлення](screenshots/01-orders-sheet.png)
-
 ## 2. Відкрити Apps Script
 
 У таблиці відкрийте:
@@ -35,10 +31,6 @@
 - `Розширення` → `Apps Script`
 
 Після цього відкриється прив'язаний до таблиці проєкт Apps Script.
-
-Скріншот:
-
-![Відкрити Apps Script](screenshots/02-open-apps-script.png)
 
 ## 3. Вставити код
 
@@ -48,10 +40,6 @@
    - `Замовлення`
    - `Документ для підпису`
 4. Збережіть проєкт.
-
-Скріншот:
-
-![Вставити Code.gs](screenshots/03-code-gs.png)
 
 ## 4. Налаштувати Script Properties
 
@@ -65,10 +53,6 @@
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_MANAGER_CHAT_ID`
 - `TELEGRAM_ENGINEER_CHAT_ID`
-
-Скріншот:
-
-![Script Properties](screenshots/04-script-properties.png)
 
 ## 5. Налаштувати лист Замовлення
 
@@ -93,10 +77,6 @@
 
 У колонці `L` не потрібна формула. Вона заповнюється скриптом автоматично.
 
-Скріншот:
-
-![Налаштування J K L](screenshots/05-columns-j-k-l.png)
-
 ## 6. Створити тригер
 
 У Apps Script відкрийте:
@@ -111,29 +91,7 @@
 - Event source: `From spreadsheet`
 - Event type: `On edit`
 
-Скріншот:
-
-![Тригер onEdit](screenshots/06-trigger-onedit.png)
-
-## 7. Створити тригер очищення PDF
-
-Fallback PDF створюються у Google Drive, якщо Telegram не приймає файл напряму. Щоб старі файли не накопичувались, створіть місячний тригер очищення.
-
-У Apps Script відкрийте:
-
-- `Triggers`
-- `Add Trigger`
-
-Параметри:
-
-- Function: `cleanupOldMemoPdfs`
-- Deployment: `Head`
-- Event source: `Time-driven`
-- Type: `Month timer`
-
-Функція переносить у кошик тільки PDF-файли з назвою, що починається з `document_dlya_pidpysu_`, якщо вони старші за 1 місяць.
-
-## 8. Перевірити Telegram
+## 7. Перевірити Telegram
 
 Для перевірки Telegram можна тимчасово додати власну тестову функцію або виконати реальний сценарій на одному тестовому рядку.
 
@@ -145,11 +103,7 @@ Fallback PDF створюються у Google Drive, якщо Telegram не пр
 - `chat_id` правильні
 - `UrlFetchApp` працює
 
-Скріншот:
-
-![Тест Telegram](screenshots/07-test-telegram.png)
-
-## 9. Перевірити робочий сценарій
+## 8. Перевірити робочий сценарій
 
 1. Створіть кілька рядків на листі `Замовлення`.
 2. Для рядків однієї дати поставте галочки в `J`.
@@ -161,16 +115,11 @@ Fallback PDF створюються у Google Drive, якщо Telegram не пр
    - записати ID пакета в `L`
    - зняти галочки в `J`
    - перебудувати лист `Документ для підпису`
-   - відправити PDF менеджеру й інженеру або fallback-посилання з Google Drive
 5. Перевірте лист `Документ для підпису`.
 6. Змініть статус у `K`.
 7. Інженеру має прийти повідомлення про новий статус.
 
-Скріншот:
-
-![Робочий сценарій](screenshots/08-workflow-check.png)
-
-## 10. Синхронізація через clasp
+## 9. Синхронізація через clasp
 
 ### Встановлення
 
@@ -203,10 +152,6 @@ clasp login
 - `Project Settings`
 - `Script ID`
 
-Скріншот:
-
-![Script ID](screenshots/09-script-id.png)
-
 ### Завантаження коду в Apps Script
 
 З папки репозиторію:
@@ -221,10 +166,9 @@ clasp push
 clasp pull
 ```
 
-## 11. Перевірка перед бойовим запуском
+## 10. Перевірка перед бойовим запуском
 
 - перевипустіть Telegram токен, якщо він десь публікувався
 - не комітьте реальні токени в git
 - перевірте назви листів без зайвих пробілів
 - перевірте, що тригер саме `On edit`, а не `On change`
-- перевірте, що для `cleanupOldMemoPdfs` створений місячний time-driven trigger

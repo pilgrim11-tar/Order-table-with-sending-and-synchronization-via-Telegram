@@ -7,9 +7,6 @@ Google Apps Script для таблиці електроцеху.
 - відправляє пакет менеджеру в Telegram
 - відправляє інженеру підтвердження пакета і зміни статусів
 - формує лист `Документ для підпису`
-- намагається відправити PDF менеджеру й інженеру
-- якщо прямий `sendDocument` падає, відправляє посилання на PDF з Google Drive
-- раз на місяць може очищати старі fallback PDF у Google Drive
 
 ## Структура таблиці
 
@@ -44,10 +41,6 @@ Google Apps Script для таблиці електроцеху.
    - function: `onEdit`
    - event source: `From spreadsheet`
    - event type: `On edit`
-5. Для автоматичного очищення старих PDF створіть time-driven trigger:
-   - function: `cleanupOldMemoPdfs`
-   - event source: `Time-driven`
-   - type: `Month timer`
 
 ## Робочий сценарій
 
@@ -61,18 +54,6 @@ Google Apps Script для таблиці електроцеху.
    - надсилає інженеру повідомлення
    - записує пакет у колонку `L`
    - перебудовує лист `Документ для підпису`
-   - відправляє PDF або fallback-посилання
-
-## PDF у Google Drive
-
-Якщо Telegram не приймає PDF напряму, скрипт створює файл у Google Drive і надсилає посилання менеджеру та інженеру.
-
-Функція `cleanupOldMemoPdfs` переносить у кошик fallback PDF, які:
-- мають назву з префіксом `document_dlya_pidpysu_`
-- є PDF-файлами
-- старші за 1 місяць
-
-Для автоматичного очищення на цю функцію треба повісити місячний time-driven trigger.
 
 ## Файли
 
